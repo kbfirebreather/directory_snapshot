@@ -16,5 +16,6 @@ arg2 - output file location
 arg3 - output file name
 
 If arg1, arg2, and arg3 ARE NOT SET. It will use the defaults.
+Defaults can be set in the defaults.h file
 
 arg1, arg2, and arg3 MUST ALL BE SET for it to use ANY of the arguments
