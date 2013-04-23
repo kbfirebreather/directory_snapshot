@@ -16,7 +16,6 @@ struct folders {
 	int is_folder;
 	char path[1000];
 	struct folders *next;
-	//struct folders *prev;
 };
 
 int print_to_file(struct folders *folders_ptr);

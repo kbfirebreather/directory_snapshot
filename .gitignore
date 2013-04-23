@@ -1,2 +1,4 @@
 snapshot.o
 snapshot_television
+*.txt
+*.out
