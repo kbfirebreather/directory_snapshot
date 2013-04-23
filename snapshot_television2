@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+
+echo "Backuped up?\n" > backup_test
+
+./snapshot.o
+
