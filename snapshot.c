@@ -71,7 +71,7 @@ int print_file_list(struct folders *folders_ptr)
 			printf("Folder: %s\n", folders_t->path);
 		folders_t = folders_t->next;
 	}
-	//printf("Folder: %s\n", folders_t->path); // last node
+	printf("Folder: %s\n", folders_t->path); // last node
 }
 
 /* Function: sort_list
@@ -90,15 +90,14 @@ int sort_list(struct folders * folders_ptr)
 	struct folders * folders_t;
 	folders_t = folders_ptr; // traverse list
 	int switched = 1;
-	int num_passes = 0;
 	while(switched == 1) // keep going until an entire pass occurs without a swap
 	{
 		switched = 0; // reset state
 		folders_t = folders_ptr; // point to beginning of list
 		while(folders_t->next != NULL) // iterate to the n-1 node
 		{
-			char path[1000];
-			char path2[1000];
+			char path[1000]; // local
+			char path2[1000]; // local
 			int is_folder1 = folders_t->is_folder; // current nodes state
 			int is_folder2= folders_t->next->is_folder; // next nodes state
 			strcpy(path,folders_t->path); // save current nodes path
@@ -129,51 +128,65 @@ int sort_list(struct folders * folders_ptr)
  * Note: 
  *
 */
-int append_folder_list(struct folders * folders_ptr, char path[1000], int is_folder)
+int append_folder_list(struct folders * folders_ptr, char path[1000], unsigned char d_type)
 {
-	struct folders * conductor;
-	conductor = folders_ptr;
-	int counter = 0;
-	while(conductor->next != NULL)
+	int is_folder = 0;
+
+	if(d_type == DT_DIR) // test if supplied path is a directory or not
+		is_folder = 1;
+
+	struct folders * conductor; // to traverse linked list
+	conductor = folders_ptr; // point to beginning of linked list
+
+	while(conductor->next != NULL) // iterate through until we get to last node
 	{
-		counter++;
-		conductor = conductor->next;
+		conductor = conductor->next; // point to next node
 	}
 	// should be at end of list
-	conductor->next = malloc(sizeof(struct folders));
-	conductor = conductor->next;
-	strncpy(conductor->path, path, sizeof(conductor->path));
-	conductor->is_folder = is_folder;
-	conductor->next = NULL;
+	conductor->next = malloc(sizeof(struct folders)); // allocate memory for new list
+	conductor = conductor->next; // point to new node
+	strncpy(conductor->path, path, sizeof(conductor->path)); // set path for new node
+	conductor->is_folder = is_folder; // set folder bit for new node
+	conductor->next = NULL; // set next to NULL to indicate this is the last node
 }
 
-int populateDirectory(struct folders * folders_ptr, char * directory)
+
+/* Function: populate_directory
+ *
+ * Purpose: populate folders linked list with contents of supplied @directory
+ *
+ * @params: @folders_ptr - pointer to beginning of linked list
+ 			@directory - string indicating directory to traverse
+ *
+ * Return: @none
+ *
+ * Note: 
+ *
+*/
+int populate_directory(struct folders * folders_ptr, char * directory)
 {
 	struct dirent * dent;
 	DIR *src = opendir(directory);
-	int is_folder = 0;
 	while((dent = readdir(src)) != NULL)
 	{
 		if(strcmp("..", dent->d_name) == 0 || strcmp(".", dent->d_name) == 0)
-			continue;
+			continue; // skip '.' and '..'
 
 		char path[1000];
+		// generate absolute path
 		strcpy(path, directory);
 		strcat(path, "/");
 		strcat(path, dent->d_name);
-		is_folder = 0;
 
-		if(dent->d_type == 4){ // FOLDER
-			is_folder = 1;
-		}
+		append_folder_list(folders_ptr, path, dent->d_type); // add node to struct for newly read opendir
 
-		append_folder_list(folders_ptr, path, is_folder);
-
-		if(dent->d_type == 4){ // FOLDER
+		if(dent->d_type == DT_DIR){ // IF IS A FOLDER
 			populateDirectory(folders_ptr, path); // recursive traverse
 		}
 
 	}
+
+	return 0;
 }
 
 /* Function: maketime()
@@ -224,17 +237,18 @@ char * format_output_file()
 {
 	char * datetime = maketime(); // must be free'd()
 	char file_buf[1000];
-	strcpy(file_buf, out_root);
-	strcat(file_buf, out_file);
-	strcat(file_buf, "_");
-	strcat(file_buf, datetime);
-	strcat(file_buf, ".txt");
-	//printf("file_buf: %s\n", file_buf);
-	free(datetime);
-	char * return_path = malloc(strlen(file_buf) + 1);
-	//printf("%d -- %s\n", strlen(file_buf), file_buf);
-	strcpy(return_path, file_buf);
-	return return_path;
+	strcpy(file_buf, out_root); // root for output directory
+	strcat(file_buf, out_file); // output file name
+	strcat(file_buf, "_"); 		// _
+	strcat(file_buf, datetime); // datetime
+	strcat(file_buf, ".txt");   // extension (.txt)
+
+	free(datetime); // free memory allocated from maketime()
+	char * return_path = malloc(strlen(file_buf) + 1); // allocate memory for char* to return
+
+	strcpy(return_path, file_buf); // copy file_buf into return_path
+
+	return return_path; // return return_path
 }
 
 /* Function: fix_dir_root
@@ -256,6 +270,17 @@ void fix_dir_root()
 	}
 }
 
+/* Function: fix_out_root
+ *
+ * Purpose: If out_root does not have a '/' as it's last character, that needs to be added
+ *
+ * @params: @none
+ *
+ * Return: none
+ *
+ * Note: 
+ *
+*/
 void fix_out_root()
 {
 	if(out_root[(strlen(out_root) - 1)] != '/') // last character in string is a '/'
@@ -268,21 +293,21 @@ void fix_out_root()
 void display_readme()
 {
 	FILE *file;
-	file = fopen("README", "r");
-	if(file == NULL)
+	file = fopen("README", "r"); // open readme for reading
+	if(file == NULL) // verify we opened it 
 	{
 		printf("failed to open readme\n");
 		exit(0);
 	}
 
 	char line[512]; // buffer for each line
-	while(fgets(line, sizeof(line), file) != NULL)
+	while(fgets(line, sizeof(line), file) != NULL) // scan line by line, amax 512 char's
 	{
-		printf("%s", line);
+		printf("%s", line); // print line
 	}
-	printf("\n\n");
+	printf("\n\n"); // print newlines
 
-	fclose(file);
+	fclose(file); // close file
 }
 
 int main(int argc, char *argv[])
@@ -291,15 +316,13 @@ int main(int argc, char *argv[])
 	{
 		if(strcmp(argv[1], "--help") == 0)
 		{
-			printf("Help:\n\n");
-			display_readme();
-			exit(1);
+			display_readme(); // display readme to screen
+			exit(1); // exit
 		}
 	}
 
-	if(argc == 4) // 4 arguments. executable | input location | output location | file name
-	{
-		printf("command line set\n");
+	if(argc == 4) { // 4 arguments. executable | input location | output location | file name
+	
 		strncpy(dir_root, argv[1], sizeof(dir_root) - 1);
 		strncpy(out_root, argv[2], sizeof(out_root) - 1);
 		strncpy(out_file, argv[3], sizeof(out_file) - 1);
@@ -314,7 +337,14 @@ int main(int argc, char *argv[])
 	DIR *src = opendir(out_root);
 	if(src == NULL)
 	{
-		printf("out_root directory unable to be opened: %s\n", out_root);
+		printf("Error: output file location directory doesn't exist or can't be read! -- %s\n", out_root);
+		exit(0);
+	}
+
+	src = opendir(dir_root);
+	if(src == NULL)
+	{
+		printf("Error: directory to traverse location doesn't exist or can't be read! -- %s\n", dir_root);
 		exit(0);
 	}
 
@@ -323,7 +353,7 @@ int main(int argc, char *argv[])
 	struct folders *folders_ptr = (struct folders*)malloc(sizeof(struct folders));
 	folders_ptr->next = NULL;
 	
-	populateDirectory(folders_ptr, dir_root); // scan directory and save all paths within into struct
+	populate_directory(folders_ptr, dir_root); // scan directory and save all paths within into struct
 
 	sort_list(folders_ptr); // bubble sort the list
 
