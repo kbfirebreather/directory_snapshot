@@ -256,6 +256,15 @@ void fix_dir_root()
 	}
 }
 
+void fix_out_root()
+{
+	if(out_root[(strlen(out_root) - 1)] != '/') // last character in string is a '/'
+	{
+		out_root[(strlen(out_root))] = '/'; // set '/' to \0
+		out_root[(strlen(out_root)+1)] = '\0'; // set NULL
+	}
+}
+
 void display_readme()
 {
 	FILE *file;
@@ -300,6 +309,14 @@ int main(int argc, char *argv[])
 		strncpy(out_file, DEFAULT_OUT_FILE, sizeof(out_file) - 1);
 	}
 	fix_dir_root(); // strip trailing '/' if exists in dir_root
+	fix_out_root(); // add trailing '/' if it doesn't exist
+
+	DIR *src = opendir(out_root);
+	if(src == NULL)
+	{
+		printf("out_root directory unable to be opened: %s\n", out_root);
+		exit(0);
+	}
 
 	printf("dir_root: %s\n out_root: %s\n out_file: %s\n", dir_root, out_root, out_file);
 
