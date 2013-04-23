@@ -2,3 +2,19 @@ directory_snapshot
 ==================
 
 Saves text file based on directory tree
+
+Usage:
+
+gcc snapshot.c -o <outfile>
+
+./<outfile>
+
+./<outfile> <arg1> <arg2> <arg3>
+
+arg1 - directory to traverse
+arg2 - output file location
+arg3 - output file name
+
+If arg1, arg2, and arg3 ARE NOT SET. It will use the defaults.
+
+arg1, arg2, and arg3 MUST ALL BE SET for it to use ANY of the arguments

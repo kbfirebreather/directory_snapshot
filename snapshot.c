@@ -256,6 +256,26 @@ void fix_dir_root()
 	}
 }
 
+void display_readme()
+{
+	FILE *file;
+	file = fopen("README", "r");
+	if(file == NULL)
+	{
+		printf("failed to open readme\n");
+		exit(0);
+	}
+
+	char line[512]; // buffer for each line
+	while(fgets(line, sizeof(line), file) != NULL)
+	{
+		printf("%s", line);
+	}
+	printf("\n\n");
+
+	fclose(file);
+}
+
 int main(int argc, char *argv[])
 {
 	if(argc == 2)
@@ -263,6 +283,7 @@ int main(int argc, char *argv[])
 		if(strcmp(argv[1], "--help") == 0)
 		{
 			printf("Help:\n\n");
+			display_readme();
 			exit(1);
 		}
 	}
