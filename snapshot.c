@@ -19,16 +19,44 @@ struct folders {
 	//struct folders *prev;
 };
 
-int print_to_file(struct folders *folders_ptr, FILE *fp)
+int print_to_file(struct folders *folders_ptr);
+int print_list(struct folders * folders_ptr);
+int print_folder_list(struct folders * folders_ptr);
+int print_file_list(struct folders *folders_ptr);
+int sort_list(struct folders * folders_ptr);
+int append_folder_list(struct folders * folders_ptr, char path[1000], unsigned char d_type);
+int populate_directory(struct folders * folders_ptr, char * directory);
+void display_readme();
+void fix_out_root();
+void fix_dir_root();
+char * format_output_file();
+char * maketime();
+
+
+int print_to_file(struct folders *folders_ptr)
 {
-	struct folders *conductor;
-	conductor = folders_ptr;
+	char * output_file = format_output_file();
+
+	FILE *file; 
+	file = fopen(output_file, "w");
+	if(file == NULL)
+	{
+		printf("Unable to open output file for writting: %s\n", output_file);
+		exit(0);
+	}
+
+	free(output_file);
+
+	struct folders *conductor; // traverse linked list
+	conductor = folders_ptr; // point to beginning of linked list
 	while(conductor->next != NULL) // will take us to second to last node
 	{
-		fprintf(fp, "%s\n", conductor->path);
-		conductor = conductor->next;
+		fprintf(file, "%s\n", conductor->path); // print to file
+		conductor = conductor->next; // on to the next node
 	}
-	fprintf(fp, "%s\n", conductor->path); // last node
+	fprintf(file, "%s\n", conductor->path); // print last node to the file
+
+	fclose(file);
 }
 
 // print everything to screen
@@ -181,7 +209,7 @@ int populate_directory(struct folders * folders_ptr, char * directory)
 		append_folder_list(folders_ptr, path, dent->d_type); // add node to struct for newly read opendir
 
 		if(dent->d_type == DT_DIR){ // IF IS A FOLDER
-			populateDirectory(folders_ptr, path); // recursive traverse
+			populate_directory(folders_ptr, path); // recursive traverse
 		}
 
 	}
@@ -206,17 +234,17 @@ char * maketime()
 	char buf[80];
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
-	snprintf(buf, sizeof(buf), "%d-", tm.tm_year + 1900);
+	snprintf(buf, sizeof(buf), "%d-", tm.tm_year + 1900); // YYYY-
 	strcpy(datetime, buf);
-	snprintf(buf, sizeof(buf), "%d-", tm.tm_mon + 1);
+	snprintf(buf, sizeof(buf), "%d-", tm.tm_mon + 1); // M-
 	strcat(datetime, buf);
-	snprintf(buf, sizeof(buf), "%d ", tm.tm_mday);
+	snprintf(buf, sizeof(buf), "%d ", tm.tm_mday); // D 
 	strcat(datetime, buf);
-	snprintf(buf, sizeof(buf), "%d:", tm.tm_hour);
+	snprintf(buf, sizeof(buf), "%d:", tm.tm_hour); //HH:
 	strcat(datetime, buf);
-	snprintf(buf, sizeof(buf), "%d:", tm.tm_min);
+	snprintf(buf, sizeof(buf), "%d:", tm.tm_min); // M:
 	strcat(datetime, buf);
-	snprintf(buf, sizeof(buf), "%d", tm.tm_sec);
+	snprintf(buf, sizeof(buf), "%d", tm.tm_sec); // S
 	strcat(datetime, buf);
 
 	return datetime;
@@ -322,7 +350,6 @@ int main(int argc, char *argv[])
 	}
 
 	if(argc == 4) { // 4 arguments. executable | input location | output location | file name
-	
 		strncpy(dir_root, argv[1], sizeof(dir_root) - 1);
 		strncpy(out_root, argv[2], sizeof(out_root) - 1);
 		strncpy(out_file, argv[3], sizeof(out_file) - 1);
@@ -331,46 +358,39 @@ int main(int argc, char *argv[])
 		strncpy(out_root, DEFAULT_OUT_ROOT, sizeof(out_root) - 1);
 		strncpy(out_file, DEFAULT_OUT_FILE, sizeof(out_file) - 1);
 	}
-	fix_dir_root(); // strip trailing '/' if exists in dir_root
-	fix_out_root(); // add trailing '/' if it doesn't exist
 
-	DIR *src = opendir(out_root);
+	fix_dir_root(); // strip trailing '/' if exists in dir_root
+	fix_out_root(); // add trailing '/' if it doesn't exist to out_root
+
+	DIR *src = opendir(out_root); // attempt to open out_root folder location
 	if(src == NULL)
 	{
 		printf("Error: output file location directory doesn't exist or can't be read! -- %s\n", out_root);
 		exit(0);
 	}
+	printf("Output Folder Location valid...\n");
 
-	src = opendir(dir_root);
+	src = opendir(dir_root); // attempt to open dir_root folder location
 	if(src == NULL)
 	{
 		printf("Error: directory to traverse location doesn't exist or can't be read! -- %s\n", dir_root);
 		exit(0);
 	}
+	printf("Folder to Scan valid...\n");
 
-	printf("dir_root: %s\n out_root: %s\n out_file: %s\n", dir_root, out_root, out_file);
-
-	struct folders *folders_ptr = (struct folders*)malloc(sizeof(struct folders));
-	folders_ptr->next = NULL;
+	struct folders *folders_ptr = (struct folders*)malloc(sizeof(struct folders)); // allocate memory for structure
+	folders_ptr->next = NULL; // ->next = NULL, this is the last node in teh list
 	
+	printf("Populating directory tree...\n");
 	populate_directory(folders_ptr, dir_root); // scan directory and save all paths within into struct
 
+	printf("Sorting Directory Tree Alphabetically...\n");
 	sort_list(folders_ptr); // bubble sort the list
 
-	FILE *file; 
+	printf("Saving directory tree to output file...\n");
+	print_to_file(folders_ptr);
 
-	char * output_file = format_output_file();
-	printf("output file: %s\n", output_file);
-	
-	file = fopen(output_file,"w");
-
-	free(output_file);
-
-	print_to_file(folders_ptr, file);
-
-	fclose(file);
-
-	printf("done scanning\n");
+	printf("Scan Complete.\n You can find your output file located at: %s\n", out_root);
 
 	return 0;
 }
