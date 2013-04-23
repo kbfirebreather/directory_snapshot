@@ -3,10 +3,11 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <time.h>
+#include "defaults.h"
 
-const char * DEFAULT_DIR_ROOT = "/media/pogostick/Television";
-const char * DEFAULT_OUT_ROOT = "/home/pogostick/directory_snapshot/";
-const char * DEFAULT_OUT_FILE = "snapshot";
+extern const char * DEFAULT_DIR_ROOT;// = "/media/pogostick/Television";
+extern const char * DEFAULT_OUT_ROOT;// = "/home/pogostick/directory_snapshot/";
+extern const char * DEFAULT_OUT_FILE;// = "snapshot";
 
 char dir_root[1000];
 char out_root[1000];
@@ -389,7 +390,8 @@ int main(int argc, char *argv[])
 	printf("Saving directory tree to output file...\n");
 	print_to_file(folders_ptr);
 
-	printf("Scan Complete.\n You can find your output file located at: %s\n", out_root);
+	printf("Scan Complete.\n");
+	printf("You can find your output file located at: %s\n", format_output_file());
 
 	return 0;
 }
